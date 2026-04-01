@@ -6,6 +6,7 @@ const through2 = require('through2');
 const app = express();
 const PORT = 3000;
 
+// function for through2 for counting logs
 function sortLogsWrapper(response) {
   return function sortLogs(chunk, enc, callback) {
     const textType = chunk.toString().split(' ')[0];
@@ -20,28 +21,43 @@ app.post('/upload', (req, res) => {
 
   let response = { success: true, summary: {} };
 
-  const bb = busboy({ headers: req.headers });
+  let bb; // initializing busboy
+  try {
+    bb = busboy({ headers: req.headers });
+  } catch (error) {
+    console.log('Error message: ' + error.message);
+    response.success = false;
+    response.error = error.message;
+    return res.json(response);
+  }
+
   bb.on('file', (name, file, info) => {
-    file.pipe(split2()).pipe(through2(sortLogsWrapper(response)));
-    file.on('error', (err) => {
-      console.log(err);
+    // busboy stream
+    file.on('error', (error) => {
+      console.log('Error message: ' + error.message);
       response.success = false;
+      response.error = error.message;
+    });
+
+    const analyzer = file
+      .pipe(split2())
+      .pipe(through2(sortLogsWrapper(response)));
+    analyzer.on('error', (error) => {
+      console.log('Error message: ' + error.message);
+      response.success = false;
+      response.error = error.message;
     });
   });
 
-  req.pipe(bb); // pipe request into busboy
-  bb.on('error', (err) => {
+  bb.on('error', (error) => {
     response.success = false;
+    response.error = error.message;
   });
   bb.on('finish', () => {
-    if (response.success) {
-      res.json(response);
-    } else {
-      console.log(err);
-      response.error = 'An unexpected error';
-      res.json(response);
-    }
+    res.json(response);
   });
+
+  req.pipe(bb); // pipe request into busboy
 });
 
 app.listen(PORT, () => {
