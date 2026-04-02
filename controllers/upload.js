@@ -10,6 +10,23 @@ module.exports = (req, res, next) => {
   let hasError = false;
   let hasFile = false;
 
+  const allowedLevels = ['ERROR', 'INFO', 'WARN'];
+
+  // level filtering
+  let { level } = req.query;
+  level = level ? level.split(',').map((el) => el.trim().toUpperCase()) : [];
+  let wrongLevel = false;
+  level.forEach((element) => {
+    if (!allowedLevels.includes(element)) wrongLevel = true;
+  });
+  if (wrongLevel)
+    return next(
+      new ErrorResponse(
+        "Please send correct level type: 'ERROR', 'INFO', 'WARN'.",
+        400,
+      ),
+    );
+
   let summary = {};
 
   let bb; // initializing busboy
@@ -31,7 +48,8 @@ module.exports = (req, res, next) => {
 
     const analyzer = file // pipes for counting logs
       .pipe(split2())
-      .pipe(through2(sortLogsWrapper(summary)));
+      .pipe(through2(sortLogsWrapper(summary, level, allowedLevels)));
+
     analyzer.on('error', (err) => {
       hasError = true;
       return next(new ErrorResponse('File error', 500));
