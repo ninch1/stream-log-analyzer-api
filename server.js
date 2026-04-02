@@ -9,7 +9,12 @@ const PORT = 3000;
 app.post('/upload', upload);
 
 app.use((req, res, next) => {
-  next(new ErrorResponse(`Route not found: ${req.originalUrl}`, 404));
+  next(
+    new ErrorResponse(
+      `Route not found: ${req.originalUrl} for method ${req.method}`,
+      404,
+    ),
+  );
 });
 
 app.use(errorMiddleware);
