@@ -1,9 +1,17 @@
 // Error handler middleware
 
+const ErrorResponse = require('../utils/ErrorResponse');
+
 module.exports = (err, req, res, next) => {
-  console.log(err.stack);
-  res.status(err.statusCode || 500).json({
+  let error = { ...err };
+  error.message = err.message;
+
+  if (error.message === 'Missing Content-Type') {
+    error = new ErrorResponse('Expected multipart/form-data upload', 400);
+  }
+
+  res.status(error.statusCode || 500).json({
     success: false,
-    error: err.message || 'Server error',
+    error: error.message || 'Server error',
   });
 };

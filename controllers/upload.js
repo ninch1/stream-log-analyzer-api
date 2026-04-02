@@ -17,7 +17,7 @@ module.exports = (req, res, next) => {
     bb = busboy({ headers: req.headers });
   } catch (err) {
     hasError = true;
-    return next(new ErrorResponse('Expected multipart/form-data upload', 400));
+    return next(err);
   }
 
   bb.on('file', (name, file, info) => {
