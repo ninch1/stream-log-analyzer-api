@@ -182,7 +182,6 @@ http://localhost:3000/upload
 
 ## 📌 Future Improvements
 
-- Return matched log lines (not just counts)
 - Advanced filtering (by message content)
 - Multiple file uploads
 - File size limits & validation
