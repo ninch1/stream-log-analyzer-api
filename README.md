@@ -15,6 +15,15 @@ A Node.js API that processes uploaded log files using streams and returns a summ
   - WARN
   - ERROR
 
+- 🔍 Filter logs via query parameters:
+  - `?level=ERROR`
+  - `?level=ERROR,WARN`
+
+- 📦 Supports **gzip compressed logs (`.gz`)**
+- 📊 Returns processing metrics:
+  - total lines processed
+  - matched lines (after filtering)
+
 - Robust error handling with custom error middleware
 
 ---
@@ -26,6 +35,7 @@ A Node.js API that processes uploaded log files using streams and returns a summ
 - Busboy (streaming file uploads)
 - split2 (line-by-line stream processing)
 - through2 (transform streams)
+- zlib (gzip decompression)
 
 ---
 
@@ -49,21 +59,39 @@ A Node.js API that processes uploaded log files using streams and returns a summ
 
 ### POST `/upload`
 
-Upload a log file.
+Upload a log file and optionally filter by log level.
 
-#### Request
+---
+
+### 🔹 Query Parameters
+
+| Param   | Description                          |
+| ------- | ------------------------------------ |
+| `level` | Filter logs (comma-separated values) |
+
+#### Examples
+
+```
+/upload
+/upload?level=ERROR
+/upload?level=ERROR,WARN
+```
+
+---
+
+### 🔹 Request
 
 - Method: `POST`
 - Content-Type: `multipart/form-data`
 - Body:
-  - `file` → log file
+  - `file` → log file (`.txt` or `.gz`)
 
 #### Example (Postman)
 
 - Body → form-data
 - Key: `file`
 - Type: File
-- Select your `.txt` log file
+- Select your `.txt` or `.gz` log file
 
 ---
 
@@ -75,9 +103,13 @@ Upload a log file.
 {
   "success": true,
   "summary": {
-    "INFO": 10,
-    "WARN": 2,
+    "INFO": 2,
+    "WARN": 1,
     "ERROR": 1
+  },
+  "metrics": {
+    "totalLines": 5,
+    "matchedLines": 4
   }
 }
 ```
@@ -98,13 +130,15 @@ Upload a log file.
 The API uses a streaming pipeline:
 
 ```
-req → busboy → file stream → split2 → through2 → summary
+req → busboy → file → (optional gunzip) → split2 → through2 → summary
 ```
 
 - `busboy` extracts the uploaded file as a stream
+- `zlib` decompresses `.gz` files when needed
 - `split2` converts chunks into lines
 - `through2` processes each line and counts log levels
-- Response is sent after the stream finishes
+- Filtering and metrics are applied during streaming
+- Response is sent after processing completes
 
 ---
 
@@ -138,18 +172,21 @@ http://localhost:3000/upload
 
 ## ❗ Notes
 
-- Only supports **text-based log files**
+- Supports both **plain text and gzip-compressed logs**
 - Files are processed as streams (memory efficient)
 - Large files are handled without loading entire file into memory
+- Unknown log levels are ignored
+- Filtering applies only to predefined levels (`INFO`, `WARN`, `ERROR`)
 
 ---
 
 ## 📌 Future Improvements
 
-- Filter logs by level (e.g., only ERROR)
-- Support compressed logs (`.gz`)
-- Add validation for file type
-- Improve logging and metrics
+- Return matched log lines (not just counts)
+- Advanced filtering (by message content)
+- Multiple file uploads
+- File size limits & validation
+- Performance optimizations (stream pipeline abstraction)
 
 ---
 
