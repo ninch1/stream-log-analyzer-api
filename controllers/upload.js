@@ -29,6 +29,10 @@ module.exports = (req, res, next) => {
     );
 
   let summary = {};
+  let metrics = {
+    totalLines: 0,
+    matchedLines: 0,
+  };
 
   let bb; // initializing busboy
   try {
@@ -64,7 +68,7 @@ module.exports = (req, res, next) => {
 
     const analyzer = mainStream // pipes for counting logs
       .pipe(split2())
-      .pipe(through2(sortLogsWrapper(summary, level, allowedLevels)));
+      .pipe(through2(sortLogsWrapper(summary, metrics, level, allowedLevels)));
 
     analyzer.on('error', (err) => {
       hasError = true;
@@ -77,6 +81,7 @@ module.exports = (req, res, next) => {
         res.json({
           success: true,
           summary,
+          metrics,
         });
     });
   });
@@ -86,7 +91,7 @@ module.exports = (req, res, next) => {
     return next(new ErrorResponse('File error', 500));
   });
 
-  bb.on('end', () => {
+  bb.on('finish', () => {
     if (!hasFile) {
       return next(new ErrorResponse('No file uploaded', 400));
     }

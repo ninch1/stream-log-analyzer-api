@@ -1,6 +1,7 @@
 // function for through2 for counting logs
-function sortLogsWrapper(summary, level, allowedLevels) {
+function sortLogsWrapper(summary, metrics, level, allowedLevels) {
   return function sortLogs(chunk, enc, callback) {
+    metrics.totalLines++;
     const textType = chunk.toString().trim().split(' ')[0];
 
     // level filter
@@ -9,6 +10,7 @@ function sortLogsWrapper(summary, level, allowedLevels) {
 
     if (isAllowed && matchesFilter) {
       summary[textType] = (summary[textType] || 0) + 1;
+      metrics.matchedLines++;
     }
     callback();
   };
